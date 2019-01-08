@@ -2,6 +2,7 @@ from django.shortcuts import render
 import json
 import requests
 from bs4 import BeautifulSoup
+import django.contrib.staticfiles
 
 
 def getpaths(paths, url):
@@ -33,8 +34,11 @@ def getContent(path):
     title = soup.title.string
     print(title)
 
-    time = soup.find_all("p", class_="update-time")[0].get_text()
-    print(time)
+    if len(soup.find_all("p", class_="update-time")) > 0:
+        time = soup.find_all("p", class_="update-time")[0].get_text()
+        print(time)
+    else:
+        time = ""
 
     paragraphs = soup.find_all(class_="zn-body__paragraph")
     p2str = []
@@ -52,6 +56,10 @@ def getContent(path):
 
 
 def index(requests):
+    print()
+
+    '''
+
     paths = getpaths([], "https://www.cnn.com/specials/politics/president-donald-trump-45")
     paths = getpaths(paths, "https://www.cnn.com/specials/politics/trump-white-house")
 
@@ -59,5 +67,7 @@ def index(requests):
 
     for path in paths:
         articles.append(getContent(path))
+    '''
 
-    return render(requests, 'index.html', {'Articles': json.dumps(articles)})
+    return render(requests, 'index.html')
+
