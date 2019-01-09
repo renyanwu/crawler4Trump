@@ -2,7 +2,9 @@ from django.shortcuts import render
 import json
 import requests
 from bs4 import BeautifulSoup
-import django.contrib.staticfiles
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+import tweepy
 
 
 def getpaths(paths, url):
@@ -26,17 +28,19 @@ def getpaths(paths, url):
 
 def getContent(path):
     url = "https://www.cnn.com" + path
+
+    if "comhttp" in url:
+        return "stop"
+
     print(url)
     resp = requests.get(url)
-    resp.encoding = 'uft-8'
+    resp.encoding = 'utf-8'
     soup = BeautifulSoup(resp.text, 'html.parser')
 
     title = soup.title.string
-    print(title)
 
     if len(soup.find_all("p", class_="update-time")) > 0:
         time = soup.find_all("p", class_="update-time")[0].get_text()
-        print(time)
     else:
         time = ""
 
@@ -46,6 +50,7 @@ def getContent(path):
     for p in paragraphs:
         p2str.append(str(p))
 
+    print(title)
     article = {
         "title": title,
         "time": time,
@@ -56,18 +61,44 @@ def getContent(path):
 
 
 def index(requests):
-    print()
+    return render(requests, 'index.html')
 
-    '''
+def twitter(requests):
+    return render(requests, 'twitter.html')
 
+@csrf_exempt
+def getArticles(requests):
     paths = getpaths([], "https://www.cnn.com/specials/politics/president-donald-trump-45")
     paths = getpaths(paths, "https://www.cnn.com/specials/politics/trump-white-house")
 
     articles = []
 
     for path in paths:
+        content = getContent(path)
+        if content == "stop":
+            break
         articles.append(getContent(path))
-    '''
 
-    return render(requests, 'index.html')
+    return HttpResponse(json.dumps(articles), content_type="application/json")
+
+@csrf_exempt
+def getTwitters(requests):
+
+    consumer_key = 'xxxx'
+    consumer_secret = 'xxxx'
+    access_token = 'xxxx-xxxx'
+    access_token_secret = 'xxxx'
+
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_token_secret)
+
+    api = tweepy.API(auth)
+
+    DT_tweets = api.user_timeline('realDonaldTrump')
+
+    tweets = []
+    for tweet in DT_tweets:
+        tweets.append({'time': tweet.created_at.strftime("%Y-%m-%d %H:%M:%S"), 'text': tweet.text})
+
+    return HttpResponse(json.dumps(tweets), content_type="application/json")
 

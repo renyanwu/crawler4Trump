@@ -2,8 +2,10 @@
 <html>
 
 <head>
+    <meta charset="utf-8">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 </head>
 
@@ -11,58 +13,86 @@
     <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="#">Donald Trump News</a>
+                <a class="navbar-brand" href="/">Donald Trump News</a>
             </div>
 
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
-                    <li><a href="#">CNN</a></li>
-                    <li><a href="#">Twitter</a></li>
+                    <li><a href="/">CNN</a></li>
+                    <li><a href="/twitter">Twitter</a></li>
                 </ul>
             </div>
         </div>
     </nav>
     <div class="row">
-        <div class="container col-md-5" style="padding-left:5em; padding-right: 2em;overflow: auto">
-            <div class="page-header">
-                <a href="#" style="font-size: x-large;">As a heads up, the navbar component is rather tricky here in that the styles for displaying it are rather specific and detailed. Overrides to ensure desktop styles display are not as performant or sleek as one would like.s</a>
-            </div>
-            <div class="page-header">
-                <a href="#" style="font-size: x-large;">As a heads up, the navbar component is rather tricky here in that the styles for displaying it are rather specific and detailed. Overrides to ensure desktop styles display are not as performant or sleek as one would like.s</a>
-            </div>
-            <div class="page-header">
-                <a href="#" style="font-size: x-large;">As a heads up, the navbar component is rather tricky here in that the styles for displaying it are rather specific and detailed. Overrides to ensure desktop styles display are not as performant or sleek as one would like.s</a>
-            </div>
-
-
-            </div>
-        <div class="container col-md-7" style="padding-left:2em;padding-right:5em;  border-left: 0.15rem solid #B6B4B6">
+        <div id="loading" style="position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 5.5em; font-size: 5.5rem; color: #5e5e5e;">
+            The crawler is working, please wait a moment<span id="animate">...</span>
+        </div>
+        <div class="container col-md-5" style="padding-left:5em; padding-right: 2em;overflow: auto;display:none;">
+        </div>
+        <div class="container col-md-7" style="padding-left:2em;padding-right:5em; display:none;border-left: 0.15rem solid #B6B4B6;">
 
             <div class="page-header">
-                <h1>Non-responsive Bootstrap</h1>
+                <h1 id="news_title">No Data found</h1>
             </div>
+            <p id="news_time" style="color: #5e5e5e;font-weight: bolder">Updated 5:36 PM ET, Tue January 8, 2019 </p>
+            <div id="news_content" style="font-size: larger">
 
-            <p>Note the lack of the <code>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</code>,
-                which disables the zooming aspect of sites in mobile devices. In addition, we reset our container's width
-                and changed the navbar to prevent collapsing, and are basically good to go.</p>
-
-            <p>As a heads up, the navbar component is rather tricky here in that the styles for displaying it are rather
-                specific and detailed. Overrides to ensure desktop styles display are not as performant or sleek as one
-                would like. Just be aware there may be potential gotchas as you build on top of this example when using the
-                navbar.</p>
-
-
-            <p>Non-responsive layouts highlight a key drawback to fixed elements. <strong class="text-danger">Any fixed
-                    component, such as a fixed navbar, will not be scrollable when the viewport becomes narrower than the
-                    page content.</strong> In other words, given the non-responsive container width of 970px and a viewport
-                of 800px, you'll potentially hide 170px of content.</p>
-            <p>There is no way around this as it's default browser behavior. The only solution is a responsive layout or
-                using a non-fixed element.</p>
-
-
+            </div>
 
         </div>
     </div>
 </body>
+
+<script>
+    function toggle(){
+        $("#animate").fadeOut(1300,function () {
+            $("#animate").fadeIn(1300, toggle());
+        });
+    }
+    toggle();
+
+    function showArticle(tag){
+        $("#news_content").text("");
+        $("#news_title").text(articles[tag].title);
+        $("#news_time").text(articles[tag].time);
+
+        for(let i=0;i<articles[tag].paragraphs.length;i++){
+            $("#news_content").append(articles[tag].paragraphs[i]);
+        }
+
+        if(articles[tag].paragraphs.length == 0){
+            $("#news_content").text("Sorry, the crawler found nothing...");
+        }
+    }
+
+    articles = [];
+
+    $.ajax({
+        url :"/getArticles",
+        type : 'POST',
+        headers:{"X-CSRFToken":$('[name="csrfmiddlewaretoken"]').val()},
+        success : function(data){
+            articles = data;
+            console.log(data);
+            console.log(articles[0]);
+
+            for(let i=0; i<articles.length; i++){
+                $(".col-md-5").append('<div class="page-header"><a style="font-size: x-large;" onclick="showArticle(' + i + ')" id="art' + i +'">'+
+                    articles[i].title+'</a></div>')
+            }
+
+            showArticle(0);
+
+
+            $("#loading").hide();
+            $(".container").show();
+        }
+
+    });
+
+
+
+</script>
 
 </html>
